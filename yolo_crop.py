@@ -1,8 +1,8 @@
-from custom_predictor.custom_detection_predictor import CustomDetectionPredictor
+from custom_yolo_predictor.custom_detection_predictor import CustomDetectionPredictor
 import numpy as np
 import torch
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from typing import List
 import argparse
@@ -12,7 +12,7 @@ import piexif
 import cv2
 from PIL import Image
 
-def crop_with_yolo(image: np.array, shape: List[int, int], coords: List[int, int, int, int], margin_of_error: int) -> np.array:
+def crop_with_yolo(image: np.array, shape: List[int], coords: List[int], margin_of_error: int) -> np.array:
     """
     Crop image with YOLO coordinates xyxy
 
@@ -124,6 +124,7 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
             
             TOTAL_PREDICTIONS+=1
             print(f"SAVING: Prediction in... {image_path}")
+            print(f"SAVING: Prediction in... {label_path}")
             
         ### No prediction...
         else: 
@@ -131,8 +132,8 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
     
 def yolo_crop_async(): 
     global TOTAL_PREDICTIONS
-    image_dir,      label_dir =         os.path.join(IN_DIR, "images"),     os.path.join(IN_DIR, "labels")
-    image_dest_dir, label_dest_dir =    os.path.join(OUT_DIR, "images"),    os.path.join(OUT_DIR, "labels")
+    image_dir,      label_dir =         os.path.join(IN_DIR, "images"),     os.path.join(IN_DIR, "masks")
+    image_dest_dir, label_dest_dir =    os.path.join(OUT_DIR, "images"),    os.path.join(OUT_DIR, "masks")
 
     for split in ["test", "train", "val"]:
         image_split,        label_split =       os.path.join(image_dir, split),         os.path.join(label_dir, split) 
@@ -151,29 +152,28 @@ def yolo_crop_async():
         predictor.setup_model(MODEL_DIR)
 
         ### ------------------------------------------
-        ### LEAVE FOR TROUBLE SHOOTING
-        for image_path in image_full_paths:
-            image_results = predictor(image_path)
-            crop_from_yolo(image_results, image_path, label_split, image_dest_split, label_dest_split)
+        ### Single Batch
+        # for image_path in image_full_paths:
+        #     image_results = predictor(image_path)
+        #     crop_from_yolo(image_results, label_split, image_dest_split, label_dest_split)
 
-        # batches = [image_full_paths[i:i + BATCH_SIZE] for i in range(0, len(image_full_paths), BATCH_SIZE)]
-        # for batch_paths in batches:
-        #     batch_results = predictor(batch_paths)
-        #     crop_from_yolo(batch_results, batch_paths, label_split, image_dest_split, label_dest_split, verifier_dest_split)
-        #     for idx, result in enumerate(batch_results):
-        #         image_path = batch_paths[idx]
-        #         crop_from_yolo(result, image_path, label_split, image_dest_split, label_dest_split, verifier_dest_split)
         ### ------------------------------------------
-
-        ### --------------------------------------------------
-        # batches = [image_full_paths[i:i + BATCH_SIZE] for i in range(0, len(image_full_paths), BATCH_SIZE)]
-        # for batch_paths in batches:
-        #     batch_results = predictor(batch_paths)
-        #     with ThreadPoolExecutor(max_workers=WORKERS) as executor: 
-        #         for idx, result in enumerate(batch_results):
-        #             image_path = batch_paths[idx]
-        #             executor.submit(crop_from_yolo, result, image_path, label_split, image_dest_split, label_dest_split, verifier_dest_split)
-        ### --------------------------------------------------
+        ### Multi Batch
+        batches = [image_full_paths[i:i + BATCH_SIZE] for i in range(0, len(image_full_paths), BATCH_SIZE)]
+        with ThreadPoolExecutor(max_workers=WORKERS) as executor: 
+            futures = []
+            for batch in batches: 
+                batch_results = predictor(batch)
+                for result in batch_results: 
+                    # Submit tasks and store the future
+                    future = executor.submit(crop_from_yolo, [result], label_split, image_dest_split, label_dest_split)
+                    futures.append(future)
+            # Wait for all futures to complete before exiting the with block
+            for future in as_completed(futures): 
+                try: 
+                    future.result() # This will raise any exceptions that occurred in the thread
+                except Exception as e: 
+                    print(f"Error processing heatmap: {e}")
 
     print(f"\nThere were a total of {TOTAL_PREDICTIONS} predictions...")
 
