@@ -1,2 +1,5 @@
+__pycache__/
+runs/* 
 stacked_segmentation/
 stacked_segmentation_cropped/
+reconstructed*/

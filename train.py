@@ -381,19 +381,19 @@ if __name__ == "__main__":
   
     trainer = Trainer(
                     model=unet,         
-                    data_path="data/stacked_segmentation", 
+                    data_path="stacked_segmentation_cropped", 
                     model_path=None, 
                     load_and_train=False,
                     mixed_precision = True,
                     
                     epochs=50,
-                    image_size = 160,
+                    image_size = 128,
                     batch_size = 64,
                     lr = 1e-4,
 
                     early_stopping = True,
-                    early_stopping_start = 10,
-                    patience = 10, 
+                    early_stopping_start = 25,
+                    patience = 5, 
                     device = "cuda"
                     )
                             
