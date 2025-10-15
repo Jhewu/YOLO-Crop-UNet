@@ -23,13 +23,13 @@ def evaluate_ensemble(pred_dir: str, label_dir: str, image_size: int) -> None:
 
     # Declare monai metrics (correctly)
     metric = DiceMetric(
-            include_background = False, 
-            reduction="mean_batch", 
+            include_background = False, # exclude background when reporting Dice (standard practice)
+            reduction="mean_batch",     
             get_not_nans = False, 
             ignore_empty = False, 
-            num_classes = 2, 
+            num_classes = None,         # infers from data (will be 1 channel)
             return_with_label = False
-            ) 
+        )
          
     metric.reset() # (not needed, but best practice)
     for i, label_path in enumerate(tqdm(label_paths)):
