@@ -211,7 +211,7 @@ if __name__ == "__main__":
     DEVICE = args.device or "cuda"
     BATCH_SIZE = args.batch_size or 32
     IMAGE_SIZE = args.batch_size or 160
-    CONFIDENCE = args.confidence or 0.5
+    CONFIDENCE = args.confidence or 0.7
     WORKERS = args.workers or 10
     FILTER = args.filter or False
     MARGIN_OF_ERROR = args.margin_of_error or 30

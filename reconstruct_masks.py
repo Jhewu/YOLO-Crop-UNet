@@ -78,7 +78,7 @@ def reconstruct_masks(data_path: str, split: str, root_dest_dir: str) -> None:
 
     with torch.no_grad():
         for idx, img_mask in enumerate(tqdm(dataloader)):
-            img = img_mask[0].float().to(device)
+            img = img_mask[0].float().to(device) # (1, 4, 128, 128) 
             image_path = dataloader.dataset.images[idx]
 
             # Open and read Exif Metadata
@@ -88,16 +88,16 @@ def reconstruct_masks(data_path: str, split: str, root_dest_dir: str) -> None:
             if coords != None:
                 total_positive+=1
 
-                pred_mask = torch.nn.functional.sigmoid(model(img))
+                pred_mask = torch.nn.functional.sigmoid(model(img)) # (1, 1, 128, 128)
 
                 # Resize the predictions
                 x1, y1, x2, y2 = coords
                 height, width = abs(int(y1)-int(y2)), abs(int(x1)-int(x2))
-                transform = transforms.Resize((height, width))
-                pred_mask = transform(pred_mask).squeeze(0).squeeze(0)
+                transform = transforms.Resize((height, width)) 
+                pred_mask = transform(pred_mask).squeeze(0).squeeze(0) # (1, 1, H, W) where H and W where the original cropped images
 
                 # Insert the predictions to full size empty mask
-                full_size_mask = torch.zeros(OG_IMG_SIZE, OG_IMG_SIZE, device=device)
+                full_size_mask = torch.zeros(OG_IMG_SIZE, OG_IMG_SIZE, device=device) 
                 full_size_mask[int(y1):int(y2), int(x1):int(x2)] = pred_mask
 
                 # Binarize the mask

@@ -4,9 +4,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
-from monai.transforms import AsDiscrete
 
 def evaluate_ensemble(pred_dir: str, label_dir: str, image_size: int) -> None:
     """
@@ -23,12 +21,16 @@ def evaluate_ensemble(pred_dir: str, label_dir: str, image_size: int) -> None:
     # total_dice = 0
     num_samples = len(label_paths)
 
-    # Declare monai metrics and processing
+    # Declare monai metrics (correctly)
     metric = DiceMetric(
             include_background = False, 
-            reduction="mean")
-    post_pred = AsDiscrete(threshold=0.5)        
-            
+            reduction="mean_batch", 
+            get_not_nans = False, 
+            ignore_empty = False, 
+            num_classes = 2, 
+            return_with_label = False
+            ) 
+         
     metric.reset() # (not needed, but best practice)
     for i, label_path in enumerate(tqdm(label_paths)):
         label_name = os.path.basename(label_path)
@@ -44,12 +46,10 @@ def evaluate_ensemble(pred_dir: str, label_dir: str, image_size: int) -> None:
             
             # Add channel and batch dimension
             pred = pred.unsqueeze(0).unsqueeze(0)
-            print("Exist")
             
         else:
             # Create empty mask if prediction doesn't exist
             pred = torch.zeros(1, 1, image_size, image_size) # Use correct size
-            print("Not Exist")
 
         # Load label
         label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
@@ -62,18 +62,17 @@ def evaluate_ensemble(pred_dir: str, label_dir: str, image_size: int) -> None:
         label = label.unsqueeze(0).unsqueeze(0)
         
         # Update metrics (sigmoid -> binarization -> metric)
-        pred_sigmoid = torch.nn.functional.sigmoid(pred)
-        pred_binary = post_pred(pred_sigmoid)
-        metric(pred_binary, label)
+        pred_binary = (pred > 0.5).float()
+        label_binary = (label > 0.5).float() # technically, it's not needed as they are already binarized when saving
+        metric(pred_binary, label_binary)
 
     mean_dice = metric.aggregate().item()
     print(f"\nThe mean dice score is {mean_dice}")
 
 if __name__ == "__main__":
-    SPLIT = "val"
+    SPLIT = "test"
     PRED_PATH = f"reconstructed_{SPLIT}/labels"
     LABEL_PATH = "stacked_segmentation/masks"
     IMAGE_SIZE = 160
     
     evaluate_ensemble(os.path.join(PRED_PATH, SPLIT), os.path.join(LABEL_PATH, SPLIT), IMAGE_SIZE)
-
