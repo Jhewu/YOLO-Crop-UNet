@@ -6,29 +6,26 @@ import os
     
 def run_subprocess(): 
     """
-    Runs run_yolo.py K times with different parameter directories for K-Fold Cross Validation.
-
-    Args: 
-        PARAM_DIRS (GLOBAL List[str]): List of parameter directory paths in the format "3_fold_run.parameters_0"
-        K (GLOBAL int): K parameter in K-Fold Cross Validation    
+    Runs a script K times with different parameters   
     """
 
-    command = ["python3", "run_training.py"]
+    command = ["python3", f"{SCRIPT}"]
 
     # Check if directories exist before running the command
+    # ARGS = [ [LIST_0], [LIST_1], [LIST_2]]
     for i in range(K): 
-        parameter_dir = PARAM_DIRS[i]
-        if os.path.exists(parameter_dir): 
-            print("Directory exists: ", parameter_dir)
+        in_dir = ARGS[i][2]
+        if os.path.exists(in_dir): 
+            print("Directory exists: ", in_dir)
         else: 
-            print("Directory does not exist: ", parameter_dir)
+            print("Directory does not exist: ", in_dir)
             return
 
     for i in range(K): 
         print(f"Running fold {i+1}/{K}...")
 
         # Expand the command to include the parameter directory
-        fold_command = command + ["-p", f"{PARAM_DIRS[i]}"]
+        fold_command = command.extend(ARGS[i])
         result = subprocess.run(fold_command, text=True)
 
         # Print the result
@@ -73,7 +70,6 @@ if __name__ == "__main__":
             '--confidence', '0.70',
             '--margin_of_error', '30',
             '--workers', '8',
-            '--filter'
             ],
             [
             "--in_dir", '3_fold_dataset/stacked_segmentation_1' # UPDATE
@@ -84,7 +80,6 @@ if __name__ == "__main__":
             '--confidence', '0.70',
             '--margin_of_error', '30',
             '--workers', '8',
-            '--filter'
             ],
                         [
             "--in_dir", '3_fold_dataset/stacked_segmentation_2' # UPDATE
@@ -95,7 +90,6 @@ if __name__ == "__main__":
             '--confidence', '0.70',
             '--margin_of_error', '30',
             '--workers', '8',
-            '--filter'
             ],
         ]
 
