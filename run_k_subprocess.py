@@ -56,7 +56,7 @@ if __name__ == "__main__":
     if args.script is not None:
         SCRIPT = args.script
     else: SCRIPT = "yolo_crop.py"
-    if args.args is not None: 
+    if len(args.args) > 0: 
         ARGS = args.args
     else: 
         # For Running 'yolo_crop.py'
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             '--margin_of_error', '30',
             '--workers', '8',
             ],
-                        [
+            [
             "--in_dir", '3_fold_dataset/stacked_segmentation_2', # UPDATE
             "--model_dir", 'pretrained_yolo/best_2.pt', # UPDATE
             "--device", 'cuda', 
