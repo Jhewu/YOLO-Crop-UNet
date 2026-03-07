@@ -85,7 +85,6 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
         label_dest_dir (str):   label destination directory
     
     """
-    global TOTAL_PREDICTIONS
     for result in image_results: 
         boxes = result.boxes
         image_path = result.path
@@ -95,8 +94,8 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
             coords = boxes.xyxy
             # If there are multiple boxes, take the max/min (inclusive)
             if len(coords) > 1: 
-                x1, x2 = torch.min(coords[:, 0]).item(), torch.max(coords[:, 2]).item()
-                y1, y2 = torch.min(coords[:, 1]).item(), torch.max(coords[:, 3]).item()
+                x1, x2 = int(torch.min(coords[:, 0]).item()), int(torch.max(coords[:, 2]).item())
+                y1, y2 = int(torch.min(coords[:, 1]).item()), int(torch.max(coords[:, 3]).item())
             ### If there's a single box, take the first
             else: 
                 coord = coords[0]
@@ -104,7 +103,8 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
                 y1, y2 = int(coord[1]), int(coord[3])
                 
             basename = os.path.basename(image_path)
-            label_path = os.path.join(label_split_dir, basename) # label path of the original label (to copy)
+            label_basename = os.path.splitext(basename)[0] + ".png"
+            label_path = os.path.join(label_split_dir, label_basename) # label path of the original label (to copy)
             dest_image_path, dest_label_path = os.path.join(image_dest_dir, basename), os.path.join(label_dest_dir, basename)
 
             # Resize the image smaller, such that we can crop it
@@ -113,8 +113,12 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
 
             # Crop image and labels with a margin of error
             cropped_image, final_coords = crop_with_yolo(orig_img, (row, col), (x1, y1, x2, y2), MARGIN_OF_ERROR)
+            label_img = cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
+            if label_img is None:
+                print(f"SKIPPING: Label not found at {label_path}")
+                continue
             cropped_label, final_coords = crop_with_yolo(
-                cv2.resize(cv2.imread(label_path, cv2.IMREAD_UNCHANGED), (row, col), interpolation=cv2.INTER_AREA),
+                cv2.resize(label_img, (row, col), interpolation=cv2.INTER_AREA),
                 (row, col),  (x1, y1, x2, y2), MARGIN_OF_ERROR)
             
             # Save the cropped image with metadata (to be reconstructed in evaluation)
@@ -122,7 +126,6 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
             # Save the cropped label
             cv2.imwrite(dest_label_path, cropped_label) 
             
-            TOTAL_PREDICTIONS+=1
             print(f"SAVING: Prediction in... {image_path}")
             print(f"SAVING: Prediction in... {label_path}")
             
@@ -131,11 +134,10 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
             print(f"SKIPPING: No Prediction in... {image_path}")
     
 def yolo_crop_async(): 
-    global TOTAL_PREDICTIONS
-    image_dir,      label_dir =         os.path.join(IN_DIR, "images"),     os.path.join(IN_DIR, "masks")
-    image_dest_dir, label_dest_dir =    os.path.join(OUT_DIR, "images"),    os.path.join(OUT_DIR, "masks")
+    image_dir,      label_dir =         os.path.join(IN_DIR, "images"),     os.path.join(IN_DIR, "labels")
+    image_dest_dir, label_dest_dir =    os.path.join(OUT_DIR, "images"),    os.path.join(OUT_DIR, "labels") # UPDATE: Changed to labels instead of masks
 
-    for split in ["test", "train", "val"]:
+    for split in ["test", "train"]: # UPDATE: Change to train, test ONLY
         image_split,        label_split =       os.path.join(image_dir, split),         os.path.join(label_dir, split) 
         image_dest_split,   label_dest_split =  os.path.join(image_dest_dir, split),    os.path.join(label_dest_dir, split)
     
@@ -175,8 +177,6 @@ def yolo_crop_async():
                 except Exception as e: 
                     print(f"Error processing heatmap: {e}")
 
-    print(f"\nThere were a total of {TOTAL_PREDICTIONS} predictions...")
-
 if __name__ == "__main__": 
     # ---------------------------------------------------
     des="""
@@ -196,11 +196,9 @@ if __name__ == "__main__":
 
     parser.add_argument('--batch_size', type=int, help='batch size to for YOLO inference (speeds up processing)\t[32]')
     parser.add_argument('--image_size', type=int, help='confidence for binarizing the image\t[160]')
-    parser.add_argument('--confidence', type=int, help='confidence for binarizing the image\t[0.5]')
+    parser.add_argument('--confidence', type=float, help='confidence for binarizing the image\t[0.5]')
     parser.add_argument('--margin_of_error', type=int, help='amount of pixels to pad the crops (all sides) as a margin of error\t[30]')
     parser.add_argument('--workers', type=int, help='number of threads/workers to use\t[10]')
-
-    parser.add_argument('--filter', action='store_true', help='Enable YOLO Gating, discard images under the confidence score')
 
     args = parser.parse_args()
 
@@ -210,11 +208,8 @@ if __name__ == "__main__":
     MODEL_DIR = args.model_dir or "yolo_checkpoint/weights/best.pt"
     DEVICE = args.device or "cuda"
     BATCH_SIZE = args.batch_size or 32
-    IMAGE_SIZE = args.batch_size or 160
-    CONFIDENCE = args.confidence or 0.7
+    IMAGE_SIZE = args.image_size or 160
+    CONFIDENCE = args.confidence or 0.70
     WORKERS = args.workers or 10
-    FILTER = args.filter or False
     MARGIN_OF_ERROR = args.margin_of_error or 30
-
-    TOTAL_PREDICTIONS = 0
     yolo_crop_async()

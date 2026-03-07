@@ -1,6 +1,8 @@
+# Permanent
 __pycache__/
+.vscode/
 runs/* 
-stacked_segmentation/
-stacked_segmentation_cropped/
 reconstructed*/
 archive/
+3_fold_dataset/
+checkpoints/*
