@@ -5,3 +5,4 @@ runs/*
 reconstructed*/
 archive/
 3_fold_dataset/
+checkpoints/*
