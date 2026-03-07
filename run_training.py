@@ -51,31 +51,12 @@ if __name__ == "__main__":
         params = yaml.safe_load(f)
 
     model_cfg = params['model']
-    MODEL = model_cfg['name'].lower()
-    if MODEL == "unet":
-        model = UNet(
+    model = UNet(
             in_channels = model_cfg['in_channels'],
             num_classes = model_cfg['out_channels'],
             widths = [64, 128, 256, 512], 
         ).to("cuda")
         
-    elif MODEL == "tiny_unet":
-        model = TinyUNet(
-            in_channels = model_cfg['in_channels'], 
-            num_classes = model_cfg['out_channels']).to("cuda")   
-        
-    elif MODEL == "unext": 
-        model = UNext(
-            input_channels = model_cfg['in_channels'],
-            num_classes = model_cfg['out_channels']).to("cuda")
-    
-    elif MODEL == "attention_unet": 
-        model = AttU_Net(
-            img_ch=model_cfg['in_channels'], 
-            output_ch=model_cfg['out_channels']).to('cuda')
-    else: 
-        raise ValueError(f"Model {MODEL} not recognized. Please choose from ['unet', 'tiny_unet', 'unext', 'attention_unet']")
-    
     metrics = SegmentationMetrics()
     loss = SegmentationLoss()
 
