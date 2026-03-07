@@ -51,20 +51,19 @@ def read_metadata(img: Image):
 
     return comment.split(",")
 
-def reconstruct_masks(root_dest_dir: str) -> None: 
+def reconstruct_masks(root_dest_dir: str) -> None:
     """
     Using a pre-existing UNet (trained with YOLO cropped images), it performs inference, and then uses the coordinates from the images (embedded and saved in metadata during yolo_cropped.py), to reconstruct the masks.
-    Args: 
-        data_path (str): directory for the dataset
-        split (str): the split to reconstruct from
+    Args:
         root_dest_dir (str): destination directory
-    
+    Globals used: PARAMS, SPLIT, WIDTHS, MODEL_PATH, OG_IMG_SIZE
+
     TODO: Optimize with batch inference and threadpoolexecutor for I/O tasks
     """
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    d_cfg = params['dataloader']
+    d_cfg = PARAMS['dataloader']
     dataloader = SegmentationDataLoader(
         root_path= d_cfg['root_path'],
         image_dir=os.path.join("images", SPLIT),
@@ -79,10 +78,10 @@ def reconstruct_masks(root_dest_dir: str) -> None:
         pin_memory=False,
     )
     
-    model = UNet(in_channels=params['model']['in_channels'], widths=WIDTHS, num_classes=params['model']['out_channels']).to(device)
+    model = UNet(in_channels=PARAMS['model']['in_channels'], widths=WIDTHS, num_classes=PARAMS['model']['out_channels']).to(device)
     model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device(device)))
 
-    dest_dir = os.path.join(root_dest_dir, split) ; create_dir(dest_dir)
+    dest_dir = os.path.join(root_dest_dir, SPLIT) ; create_dir(dest_dir)
 
     ### Counting Images with Metadata Detected
     ### ALL OF THEM SHOULD HAVE METADATA
@@ -142,7 +141,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=des.lstrip(" "), formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-o", "--original_image_size", type=int, help='original image size to reconstruct towards\t[160]')
     parser.add_argument("-u", "--unet_image_size", type=int, help='image size used to train unet\t[128]')
-    parser.add_argument('-w', '--widths', nargs='+', help='widths of the unet to reconstruct model', default=[64, 128, 256, 512])
+    parser.add_argument('-w', '--widths', nargs='+', type=int, help='widths of the unet to reconstruct model', default=[64, 128, 256, 512])
     parser.add_argument("-m", "--model_path", type=str, help='path of pretrained unet model weights\t[checkpoints/unet_0/best.pt]')
     parser.add_argument("-d", "--data_path", type=str, help='root path of the dataset\t[3_fold_dataset/stacked_segmentation_0]')
     parser.add_argument("-s", "--split", type=str, help='split to evaluate\t[test]')
@@ -159,6 +158,6 @@ if __name__ == "__main__":
     PARAM_DIR = args.param_dir or "parameters.yaml"
 
     with open(f"{PARAM_DIR}", "r") as f:
-        params = yaml.safe_load(f)
+        PARAMS = yaml.safe_load(f)
 
-    reconstruct_masks(DATA_PATH, SPLIT, f"reconstructed_{SPLIT}/labels", params)
+    reconstruct_masks(f"reconstructed_{SPLIT}/labels")
