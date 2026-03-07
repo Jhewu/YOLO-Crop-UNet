@@ -1,4 +1,7 @@
+# Internal
 import os
+
+# External
 import cv2
 import torch
 import piexif
@@ -8,8 +11,9 @@ from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from modules.unet import UNet
-from dataset import CustomDataset
+# Local
+from unet import UNet
+from dataset import SegmentationDataLoader
 
 def create_dir(folder_name: str) -> None:
     """
