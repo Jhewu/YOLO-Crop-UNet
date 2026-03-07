@@ -1,8 +1,5 @@
 # Local 
-from models.unet import UNet
-from models.tiny_unet import TinyUNet
-from models.unext import UNext
-from models.attention_unet import AttU_Net
+from unet import UNet
 
 from trainer import SegmentationTrainer
 from metrics import SegmentationMetrics
