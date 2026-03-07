@@ -1,8 +1,10 @@
 # Internal
 import os
+import argparse
 
 # External
 import cv2
+import yaml 
 import torch
 import piexif
 import numpy as np
@@ -57,7 +59,8 @@ def reconstruct_masks(data_path: str, split: str, root_dest_dir: str) -> None:
         data_path (str): directory for the dataset
         split (str): the split to reconstruct from
         root_dest_dir (str): destination directory
-    FUTURE TODO: Optimize with batch inference and threadpoolexecutor for I/O tasks
+    
+    TODO: Optimize with batch inference and threadpoolexecutor for I/O tasks
     """
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -124,13 +127,28 @@ def reconstruct_masks(data_path: str, split: str, root_dest_dir: str) -> None:
         print(f"\nWARNING: Metadata not present in {total_negative} images")
 
 if __name__ == "__main__": 
-    OG_IMG_SIZE = 160
-    UNET_IMG_SIZE = 128
-    WIDTHS = [64, 128, 256, 512]
-    MODEL_PATH = "unet_checkpoint/best.pth"
+    # -------------------------------------------------------------
+    des="""
+    Reconstruct Masks from YOLO Cropped Images by Using a Pre-Trained UNet
+    Used for Evaluating Later
+    """
+    # -------------------------------------------------------------
+
+    parser = argparse.ArgumentParser(description=des.lstrip(" "), formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("-o", "--original_image_size", type=int, help='original image size to reconstruct towards\t[160]')
+    parser.add_argument("-u", "--unet_image_size", type=int, help='image size used to train unet\t[128]')
+    parser.add_argument('-w', '--widths', nargs='+', help='widths of the unet to reconstruct model', default=[64, 128, 256, 512])
+    parser.add_argument("-m", "--model_path", type=str, help='path of pretrained unet model weights\t[checkpoints/unet_0/best.pt]')
+    parser.add_argument("-d", "--data_path", type=str, help='root path of the dataset\t[3_fold_dataset/stacked_segmentation_0]')
+    parser.add_argument("-s", "--split", type=str, help='split to evaluate\t[test]')
+
+    args = parser.parse_args()
     
-    DATA_PATH = "stacked_segmentation_cropped"
-    SPLIT = "val"
-    DEST_DIR = f"reconstructed_{SPLIT}/labels"
-    
-    reconstruct_masks(DATA_PATH, SPLIT, DEST_DIR)
+    # Assign default values 
+    OG_IMG_SIZE = args.original_image_size or 160
+    UNET_IMG_SIZE = args.unet_image_size or 128
+    WIDTHS = args.widths if len(args.widths) > 0 else [64, 128, 256, 512]
+    MODEL_PATH = args.model_path or "checkpoints/unet_0/best.pt"
+    DATA_PATH = args.data_path or "3_fold_dataset/stacked_segmentation_0"
+    SPLIT = args.split or "test"
+    reconstruct_masks(DATA_PATH, SPLIT, f"reconstructed_{SPLIT}/labels")
