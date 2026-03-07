@@ -135,7 +135,7 @@ def crop_from_yolo(image_results: List, label_split_dir: str, image_dest_dir: st
     
 def yolo_crop_async(): 
     image_dir,      label_dir =         os.path.join(IN_DIR, "images"),     os.path.join(IN_DIR, "labels")
-    image_dest_dir, label_dest_dir =    os.path.join(OUT_DIR, "images"),    os.path.join(OUT_DIR, "labels")
+    image_dest_dir, label_dest_dir =    os.path.join(OUT_DIR, "images"),    os.path.join(OUT_DIR, "labels") # UPDATE: Changed to labels instead of masks
 
     for split in ["test", "train"]: # UPDATE: Change to train, test ONLY
         image_split,        label_split =       os.path.join(image_dir, split),         os.path.join(label_dir, split) 
