@@ -1,0 +1,46 @@
+python reconstruct_masks.py -o 160 \
+    -u 128 \
+    -m checkpoints/unet_0/best.pth \
+    -d 3_fold_dataset/stacked_segmentation_0 \
+    -p checkpoints/unet_0/parameters_0.yaml
+
+python evaluate_ensemble.py -i 160 \
+    -l 3_fold_dataset/stacked_segmentation_0/labels
+ 
+ ── TEST RESULTS ──
+  dice: 0.3518
+  hd95: 41.1517
+  precision: 0.5175
+  recall: 0.2312
+
+python reconstruct_masks.py -o 160 \
+    -u 128 \
+    -m checkpoints/unet_1/best.pth \
+    -d 3_fold_dataset/stacked_segmentation_1 \
+    -p checkpoints/unet_1/parameters_1.yaml
+
+python evaluate_ensemble.py -i 160 \
+    -l 3_fold_dataset/stacked_segmentation_1/labels
+
+ ── TEST RESULTS ──
+  dice: 0.2080
+  hd95: 78.1093
+  precision: 0.2715
+  recall: 0.0812
+
+python reconstruct_masks.py -o 160 \
+    -u 128 \
+    -m checkpoints/unet_2/best.pth \
+    -d 3_fold_dataset/stacked_segmentation_2 \
+    -p checkpoints/unet_2/parameters_2.yaml
+
+python evaluate_ensemble.py -i 160 \
+    -l 3_fold_dataset/stacked_segmentation_2/labels
+
+ ── TEST RESULTS ──
+  dice: 0.6645
+  hd95: nan
+  precision: 0.0000
+  recall: 0.0000
+
+

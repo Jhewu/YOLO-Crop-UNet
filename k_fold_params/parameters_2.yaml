@@ -13,7 +13,7 @@ dataloader:
   subsample: 1.0
   
   # DataLoader Parameters
-  batch_size: 128 
+  batch_size: 8 
   num_workers: 10
   use_shuffle: false
   use_persistent_workers: false

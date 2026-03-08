@@ -9,7 +9,10 @@ from tqdm import tqdm
 
 from monai.metrics import DiceMetric
 
-def evaluate_ensemble(mask_dir: str, label_dir: str) -> None:
+# Local
+from metrics import SegmentationMetrics
+
+def evaluate_ensemble(mask_dir: str, label_dir: str, metrics) -> None:
     """
     Calculate the mean Dice score (with monai) with the two given directories
     Args: 
@@ -20,17 +23,7 @@ def evaluate_ensemble(mask_dir: str, label_dir: str) -> None:
     # Get label paths
     label_paths = sorted([os.path.join(label_dir, i) for i in os.listdir(label_dir)])
 
-    # Declare monai metrics (correctly)
-    metric = DiceMetric(
-            include_background = False, # exclude background when reporting Dice (standard practice)
-            reduction="mean_batch",     
-            get_not_nans = False, 
-            ignore_empty = False, 
-            num_classes = None,         # infers from data (will be 1 channel)
-            return_with_label = False
-        )
-         
-    metric.reset() # (not needed, but best practice)
+    metrics.reset() # (not needed, but best practice)
     for i, label_path in enumerate(tqdm(label_paths)):
         label_name = os.path.basename(label_path)
         mask_path = os.path.join(mask_dir, label_name)
@@ -63,10 +56,13 @@ def evaluate_ensemble(mask_dir: str, label_dir: str) -> None:
         # Update metrics (sigmoid -> binarization -> metric)
         pred_binary = (pred > 0.5).float()
         label_binary = (label > 0.5).float() # technically, it's not needed as they are already binarized when saving
-        metric(pred_binary, label_binary)
 
-    mean_dice = metric.aggregate().item()
-    print(f"\nThe mean dice score is {mean_dice}")
+        metrics.update(pred_binary, label_binary)
+
+    m = metrics.compute()
+    print(f"\n ── TEST RESULTS ──")
+    for k, v in m.items():
+        print(f"  {k}: {v:.4f}")
 
 if __name__ == "__main__":
     # -------------------------------------------------------------
@@ -89,5 +85,6 @@ if __name__ == "__main__":
     IMAGE_SIZE = args.image_size or 160
     MASK_PATH = args.masks_path or f"reconstructed_{SPLIT}/labels"
     LABEL_PATH = args.labels_path or "3_fold_dataset/stacked_segmentation_0/"
-    
-    evaluate_ensemble(mask_dir=os.path.join(MASK_PATH, SPLIT), label_dir=os.path.join(LABEL_PATH, SPLIT))
+
+    metrics = SegmentationMetrics()
+    evaluate_ensemble(mask_dir=os.path.join(MASK_PATH, SPLIT), label_dir=os.path.join(LABEL_PATH, SPLIT), metrics=metrics)
