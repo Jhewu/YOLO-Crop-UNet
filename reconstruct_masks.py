@@ -66,8 +66,8 @@ def reconstruct_masks(root_dest_dir: str) -> None:
     d_cfg = PARAMS['dataloader']
     dataloader = SegmentationDataLoader(
         root_path= d_cfg['root_path'],
-        image_dir=os.path.join("images", SPLIT),
-        mask_dir=os.path.join("labels", SPLIT),
+        image_dir=os.path.join("images"),
+        mask_dir=os.path.join("labels"),
         image_size=d_cfg['image_size'],
         augmentation=False,
         subsample=1.0,
@@ -77,6 +77,8 @@ def reconstruct_masks(root_dest_dir: str) -> None:
         persistent_workers=False,
         pin_memory=False,
     )
+
+    train, test = dataloader.get_dataloader()
     
     model = UNet(in_channels=PARAMS['model']['in_channels'], widths=WIDTHS, num_classes=PARAMS['model']['out_channels']).to(device)
     model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device(device)))
@@ -88,9 +90,9 @@ def reconstruct_masks(root_dest_dir: str) -> None:
     total_positive = total_negative = 0
 
     with torch.no_grad():
-        for idx, img_mask in enumerate(tqdm(dataloader)):
+        for idx, img_mask in enumerate(tqdm(test)):
             img = img_mask[0].float().to(device) # (1, 4, 128, 128) 
-            image_path = dataloader.dataset.images[idx]
+            image_path = test.dataset.image_dir + test.dataset.basenames[idx] + ".png"
 
             # Open and read Exif Metadata
             pil_img = Image.open(image_path)

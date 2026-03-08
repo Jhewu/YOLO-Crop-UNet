@@ -34,7 +34,6 @@ class SegmentationDataLoader(BaseDataLoader):
         persistent_workers: bool = True, 
         pin_memory: bool = True, 
     ):
-        
         self.train_dataset = SegmentationDataset(
                             root_path = root_path, 
                             image_path = f"{image_dir}/train",  
@@ -57,7 +56,7 @@ class SegmentationDataLoader(BaseDataLoader):
         self._persistent_workers = persistent_workers
         self._pin_memory = pin_memory
 
-    def get_dataloader(self, split: str) -> DataLoader:
+    def get_dataloader(self) -> DataLoader:
         train_dataloader = DataLoader(dataset=self.train_dataset,
                                     batch_size=self._batch_size,
                                     shuffle=self._shuffle, 
