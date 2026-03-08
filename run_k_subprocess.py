@@ -88,7 +88,7 @@ if __name__ == "__main__":
             "--device", 'cuda', 
             '--batch_size', '16',
             '--image_size', '160',
-            '--confidence', '0.70',
+            '--confidence', '0.25',
             '--margin_of_error', '30',
             '--workers', '8',
             ],

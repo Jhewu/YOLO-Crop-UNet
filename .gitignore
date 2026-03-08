@@ -6,3 +6,7 @@ reconstructed*/
 archive/
 3_fold_dataset/
 checkpoints/*
+
+# Temporary
+3_fold_dataset_70/
+3_fold_dataset_original/ 
