@@ -1,0 +1,8 @@
+python reconstruct_masks.py -o 160 \
+    -u 128 \
+    -m checkpoints/unet_0/best.pth \
+    -d 3_fold_dataset/stacked_segmentation_0 \
+    -p checkpoints/unet_0/parameters_0.yaml
+
+python evaluate_ensemble.py -i 160 \
+    -l 3_fold_dataset/stacked_segmentation_0/labels
